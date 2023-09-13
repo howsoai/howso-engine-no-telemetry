@@ -1,0 +1,62 @@
+name: Reusable WF - Build
+
+on:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.build.outputs.version }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install pypa/build
+      run: >-
+        python3 -m
+        pip install
+        build
+        --user
+
+    - name: Build a binary wheel and a source tarball
+      run: >-
+        python3 -m
+        build
+        --sdist
+        --wheel
+        --outdir dist/
+        .
+
+    - name: Get version
+      id: get-version
+      run: |
+        echo "version=$(python setup.py --version)" >> $GITHUB_OUTPUT
+        echo "VERSION=$(python setup.py --version)" >> $GITHUB_ENV
+
+    - name: Upload Tarball Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: howso-engine-no-telemetry-${{ env.VERSION }}.tar.gz
+        path: dist/howso-engine-no-telemetry-${{ env.VERSION }}.tar.gz
+        if-no-files-found: error
+
+    - name: Upload Wheel Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: howso_engine_no_telemetry-${{ env.VERSION }}-py3-none-any.whl
+        path: dist/howso_engine_no_telemetry-${{ env.VERSION }}-py3-none-any.whl
+        if-no-files-found: error

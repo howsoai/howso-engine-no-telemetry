@@ -1,0 +1,56 @@
+# OS crap
+.DS_Store
+
+# Howso core files
+**/*.caml
+**/*.so
+**/*.dll
+**/*.dylib
+howso/local/lib/core/version.json
+
+# Saved trainees
+mytrainees
+
+# InteliJ/Pycharm
+.idea
+
+# Generated Eggs
+*.egg-info
+
+# Python Binaries
+*.py[oc]
+.cache/
+__pycache__
+
+#Building
+build/
+dist/
+*.egg-info/
+
+# IDE/Localconfig
+.direnv
+.envrc
+.vscode
+.python-version
+/local
+
+# Testing
+pip.conf
+htmlcov
+**junit**
+.coverage
+coverage.xml
+howso_stacktrace.txt
+check_installation.log
+
+# Execution dumps
+*.dump*
+dumps
+*.trace*
+traces
+
+# License tools
+lf_logs
+
+# Cache files
+.howso_recent_cache*

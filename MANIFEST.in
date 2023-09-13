@@ -1,0 +1,5 @@
+include howso/local/resources/no-telemetry/extras.yml
+include howso/local/resources/no-telemetry/version.txt
+include LICENSE.txt
+graft howso
+global-exclude *.py[co]

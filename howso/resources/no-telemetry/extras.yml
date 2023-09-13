@@ -1,0 +1,3 @@
+howso:
+    client_extra_params:
+        version_check: false
