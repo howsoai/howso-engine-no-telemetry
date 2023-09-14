@@ -2,6 +2,11 @@ name: Reusable WF - Build
 
 on:
   workflow_call:
+    inputs:
+      version:
+        required: false
+        default: ''
+        type: string
     outputs:
       version:
         value: ${{ jobs.build.outputs.version }}
@@ -12,7 +17,13 @@ defaults:
 
 jobs:
 
+  pepify:
+    uses: "./.github/workflows/pepify.yml"
+    with:
+      version: ${{ inputs.version }}
+
   build:
+    needs: ["pepify"]
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get-version.outputs.version }}
@@ -24,6 +35,11 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: "3.11"
+
+    - name: Set prerelease version
+      if: inputs.version != ''
+      run: |
+        echo "__version__ = '${{ needs.pepify.outputs.pepified-version }}'" >| ./howso/resources/no-telemetry/version.txt
 
     - name: Install pypa/build
       run: >-
@@ -44,8 +60,13 @@ jobs:
     - name: Get version
       id: get-version
       run: |
-        echo "version=$(python setup.py --version)" >> $GITHUB_OUTPUT
-        echo "VERSION=$(python setup.py --version)" >> $GITHUB_ENV
+        if [ "${{ inputs.version }}" != "" ]; then
+          echo "version=${{ needs.pepify.outputs.pepified-version }}" >> $GITHUB_OUTPUT
+          echo "VERSION=${{ needs.pepify.outputs.pepified-version }}" >> $GITHUB_ENV
+        else
+          echo "version=$(python setup.py --version)" >> $GITHUB_OUTPUT
+          echo "VERSION=$(python setup.py --version)" >> $GITHUB_ENV
+        fi
 
     - name: Upload Tarball Artifact
       uses: actions/upload-artifact@v3
