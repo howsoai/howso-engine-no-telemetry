@@ -1,4 +1,4 @@
-# Howso Local No-Telemtry Overlay
+# Howso Local No-Telemetry Overlay
 
 This project serves simply to overlay add an "extra" configuration to ensure
 telemetry is switched off.
