@@ -1,0 +1,115 @@
+name: Build
+run-name: "Branch Build (${{ github.run_attempt }}.${{ github.run_number }}) - ${{ github.ref_name }}"
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      build-type:
+        required: false
+        type: string
+      optional-release-tag:
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+
+  metadata:
+    uses: howsoai/.github/.github/workflows/set-metadata.yml@main
+    secrets: inherit
+    with:
+      build-type: ${{ inputs.build-type }}
+      optional-release-tag: ${{ inputs.optional-release-tag }}
+
+  build:
+    needs: ["metadata"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install pypa/build
+      run: >-
+        python3 -m
+        pip install
+        build
+        --user
+
+    - name: Build a binary wheel and a source tarball
+      run: >-
+        python3 -m
+        build
+        --sdist
+        --wheel
+        --outdir dist/
+        .
+      env:
+        SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.metadata.outputs.version }}
+
+    - name: Upload Tarball Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: "howso-engine-no-telemetry-${{ needs.metadata.outputs.version }}"
+        path: "dist/howso-engine-no-telemetry-${{ needs.metadata.outputs.version }}.tar.gz"
+        if-no-files-found: error
+
+    - name: Upload Wheel Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: "howso_engine_no_telemetry-${{ needs.metadata.outputs.version }}-py3-none-any"
+        path: "dist/howso_engine_no_telemetry-${{ needs.metadata.outputs.version }}-py3-none-any.whl"
+        if-no-files-found: error
+
+  release:
+    needs:
+      - metadata
+    if: inputs.build-type == 'release'
+    environment:
+      name: pypi
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./tmp
+
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ needs.metadata.outputs.version }}
+        commit: ${{ github.sha }}
+        name: "howso-engine-no-telemetry ${{ needs.metadata.outputs.version }}"
+        artifactErrorsFailBuild: true
+        generateReleaseNotes: true
+        makeLatest: legacy
+        artifacts: "./tmp/howso-engine-no-telemetry-*/howso-engine-no-telemetry-*.tar.gz,./tmp/howso_engine_no_telemetry-*/howso_engine_no_telemetry-*.whl"
+        artifactContentType: application/gzip
+
+    - name: Clean up dir
+      run: |
+        mkdir -p dist
+        find ./tmp -type f -name '*.whl' -exec cp -t ./dist {} +
+        find ./tmp -type f -name '*.tar.gz' -exec cp -t ./dist {} +
+        ls ./dist
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Publish distribution to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
