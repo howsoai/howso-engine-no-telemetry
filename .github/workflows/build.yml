@@ -72,8 +72,7 @@ jobs:
         if-no-files-found: error
 
   release:
-    needs:
-      - metadata
+    needs: ["metadata", "build"]
     if: inputs.build-type == 'release'
     environment:
       name: pypi
