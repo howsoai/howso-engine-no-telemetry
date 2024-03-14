@@ -32,28 +32,31 @@ jobs:
       contents: write
     steps:
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.11"
 
-    - name: Install pypa/build
+    - name: Install cibuildwheel
       run: >-
         python3 -m
         pip install
+        cibuildwheel==2.15.0
         build
-        --user
 
-    - name: Build a binary wheel and a source tarball
-      run: >-
-        python3 -m
-        build
-        --sdist
-        --wheel
-        --outdir dist/
-        .
+    - name: Build wheels
+      run: |
+        python3 -m build --wheel --outdir wheelhouse/ .
+        mkdir -p dist/
+        mv wheelhouse/*.whl dist/howso_engine_no_telemetry-${{ needs.metadata.outputs.version }}-py3-none-any.whl
+      env:
+        SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.metadata.outputs.version }}
+
+    - name: Build tarball
+      run: |
+        python3 -m build --sdist --outdir dist/ .
       env:
         SETUPTOOLS_SCM_PRETEND_VERSION: ${{ needs.metadata.outputs.version }}
 
@@ -81,7 +84,7 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     steps:
-    
+
       - uses: actions/checkout@v4
 
       - name: Download artifacts
